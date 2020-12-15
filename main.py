@@ -1,6 +1,5 @@
 import json
 import logging
-import requests
 import sys
 from time import sleep
 from random import randint, choice
@@ -8,23 +7,9 @@ from random import randint, choice
 from actioncable.connection import Connection
 from actioncable.subscription import Subscription
 
-from settings import *
 from host_bot import HostBot
-
-# ==== REST API ================================================================
-
-def post(id, j):
-    return requests.post(BOTURL+str(id), json=j, auth=(app_id, app_secret))
-
-def patch(id, j):
-    return requests.patch(BOTURL+str(id), json=j, auth=(app_id, app_secret))
-
-def delete(id, j=None):
-    if j is None:
-        return requests.delete(BOTURL+str(id), auth=(app_id, app_secret))
-    else:
-        return requests.delete(BOTURL+str(id), json=j, auth=(app_id, app_secret))
-
+from rc_rest_api import delete
+from settings import *
 
 # ==== ACTIONCABLE =============================================================
 
@@ -38,20 +23,23 @@ HOST_BOT = None
 world = None
 
 def on_receive(message):
-    # Initialize everything
-    if message["type"] == "world":
-        world = message["payload"]
-        print("world received")
-        init_bots(world)
-    # React when host bot is mentioned
-    elif message["type"] == "entity":
-        payload = message['payload']
-        if payload['type'] == "Avatar" and payload['message']:
-            message = payload["message"]
-            if HOST_BOT.id in message["mentioned_agent_ids"]:
-                HOST_BOT.process_message(message)
-    else:
-        print("Unknown message type", message["type"])
+    try:
+        # Initialize everything
+        if message["type"] == "world":
+            world = message["payload"]
+            print("world received")
+            init_bots(world)
+        # React when host bot is mentioned
+        elif message["type"] == "entity":
+            payload = message['payload']
+            if payload['type'] == "Avatar" and payload['message']:
+                if HOST_BOT.id in payload["message"]["mentioned_agent_ids"]:
+                    HOST_BOT.process_message(payload)
+        else:
+            print("Unknown message type", message["type"])
+    except:
+        e = sys.exc_info()[0]
+        print("Failed to process received message due to ", e)
 
 subscription.on_receive(callback=on_receive)
 subscription.create()
@@ -68,13 +56,11 @@ def init_bots(world):
         print("Cleaned up bots")
 
         # Init Host Bot
-        jsn = HostBot.get_create_req(world)
-        res = post(id="", j=jsn)
-        HOST_BOT = HostBot(res.json())
+        HOST_BOT = HostBot(world)
         print(f"Initialized host bot with id {HOST_BOT.id}")
     except:
         e = sys.exc_info()[0]
-        print("Failed to POST due to ", e)
+        print("Failed to init due to ", e)
 
 try:
     while True:
