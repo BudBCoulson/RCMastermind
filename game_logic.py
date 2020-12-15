@@ -8,38 +8,46 @@ def numberToBase(n, b):
     while n:
         digits.append(str(n % b))
         n //= b
-    return ''.join(digits[::-1])
+    return "".join(digits[::-1])
 
-max_bound = int('5555',6)
+max_bound = int("5555",6)
+color_codes = {"R": "0", "O": "1", "G": "2", "B": "3", "P": "4", "Y": "5"}
 
-def start_game():
+def game():
+	num, numstr, numcnt = generate_code()
+	print(numstr)
+	
+	#guess = input("Enter guess:")
+	n, nstr, ncnt = process_guess(guess)
+	print(nstr)
+	
+	ctr = 1
+		
+	while n != num and ctr < 10: 
+		pos_correct, offpos_correct = feedback(nstr,ncnt,numstr,numcnt)
+
+		#print("Black pegs", pos_correct)
+		#print("White pegs", offpos_correct)
+		
+		#guess = input("Enter guess:")
+		n, nstr, ncnt = process_guess(guess)
+		
+		ctr += 1
+		
+	if n == num:
+		win()
+	else:
+		lose()
+
+def generate_code():
 	num = random.randrange(max_bound)
 	numstr = numberToBase(num,6).zfill(4)
 	numcnt = Counter(numstr)
-	  
-	n, nstr, ncnt = get_guess()
-	   
-	if (n == num):   
-		print("Great! You guessed the number in just one try! You're a Mastermind!") 
-		
-	else: 
-		ctr = 0  
+	
+	return num, numstr, numcnt
 
-		while (n != num):   
-			ctr += 1
-			
-			pos_correct, offpos_correct = feedback(nstr,ncnt,numstr,numcnt)
-
-			print("Black pegs", pos_correct)
-			print("White pegs", offpos_correct)
-			
-			n, nstr, ncnt = get_guess()
-
-		print("You've become a Mastermind!") 
-		print("It took you only", ctr, "tries.") 
-
-def get_guess():
-	nstr = input("Guess the passcode:").zfill(4)
+def process_guess(guess):
+	nstr = "".join(color_codes.get(clr,"") for clr in guess).zfill(4)
 	n = int(nstr,6)
 	ncnt = Counter(nstr)
 	
@@ -51,4 +59,10 @@ def feedback(nstr,ncnt,numstr,numcnt):
 	
 	return pos_correct, offpos_correct
 	
-start_game()
+def win():
+	print("You win!")
+	
+def lose():
+	print("You lose.")
+
+#game()
