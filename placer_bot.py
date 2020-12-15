@@ -32,7 +32,7 @@ class PlacerBot:
                "color": clr,
                "wall_text": txt
             }}
-        res = post("",jsn)
+        res = post(self.id,jsn)
         self.pegs.add(res["id"])
 		
 	def erase_wall(self, idx):
