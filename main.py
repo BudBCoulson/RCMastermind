@@ -63,7 +63,7 @@ def init_bots(world):
         # Cleanup pre-existing bots
         for entity in world["entities"]:
             if entity["type"] == "Bot":
-                if entity.get("name") == HostBot.BOTNAME:
+                if entity.get("name") in [HostBot.BOTNAME,PlacerBot.BOTNAME]:
                     delete(id=entity["id"])
         print("Cleaned up bots")
 
@@ -72,6 +72,13 @@ def init_bots(world):
         res = post(id="", j=jsn)
         HOST_BOT = HostBot(res.json())
         print(f"Initialized host bot with id {HOST_BOT.id}")
+        
+        # Init Placer Bot
+        jsn = PlacerBot.get_create_req(world)
+        res = post(id="", j=jsn)
+        PLACER_BOT = PlacerBot(res.json())
+        print(f"Initialized host bot with id {PLACER_BOT.id}")
+        
     except:
         e = sys.exc_info()[0]
         print("Failed to POST due to ", e)
