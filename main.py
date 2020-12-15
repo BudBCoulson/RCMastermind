@@ -10,6 +10,7 @@ from actioncable.subscription import Subscription
 
 from settings import *
 from host_bot import HostBot
+from placer_bot import PlacerBot
 
 # ==== REST API ================================================================
 
