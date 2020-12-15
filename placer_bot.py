@@ -1,4 +1,5 @@
 from typing import Any, Optional
+from rc_rest_api import *
 
 class PlacerBot:
     BOTNAME = "Mastermind Placer"
