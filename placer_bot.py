@@ -24,9 +24,8 @@ class PlacerBot:
         }}
         
     def place_wall(self, x, y, clr, txt = None):
-		jsn = {"bot_id": self.id
-		       "wall": {
-               "pos": {
+	jsn = {"wall": {
+                 "pos": {
                  "x": x,
                  "y": y
                },
