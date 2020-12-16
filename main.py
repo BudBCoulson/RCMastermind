@@ -8,7 +8,7 @@ from actioncable.connection import Connection
 from actioncable.subscription import Subscription
 
 from host_bot import HostBot
-from rc_rest_api import delete
+from rc_rest_api import *
 from settings import *
 from placer_bot import PlacerBot
 
@@ -77,4 +77,4 @@ try:
         pass
 except KeyboardInterrupt:
     if HOST_BOT:
-        delete(id=HOST_BOT.id)
+        HOST_BOT.cleanup()
