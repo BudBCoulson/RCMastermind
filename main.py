@@ -8,9 +8,9 @@ from actioncable.connection import Connection
 from actioncable.subscription import Subscription
 
 from host_bot import HostBot
+from placer_bot import PlacerBot
 from rc_rest_api import *
 from settings import *
-from placer_bot import PlacerBot
 
 # ==== ACTIONCABLE =============================================================
 
@@ -21,7 +21,6 @@ subscription = Subscription(connection, identifier={'channel': 'ApiChannel'})
 
 # WORLD STATE
 HOST_BOT = None
-PLACER_BOT = None
 world = None
 
 def on_receive(message):
@@ -48,7 +47,7 @@ subscription.create()
 
 def init_bots(world):
     try:
-        global HOST_BOT, PLACER_BOT
+        global HOST_BOT
 
         # Cleanup pre-existing bots
         for entity in world["entities"]:
@@ -62,8 +61,8 @@ def init_bots(world):
         print(f"Initialized host bot with id {HOST_BOT.id}")
         
         # Init Placer Bot
-        PLACER_BOT = PlacerBot(world)
-        print(f"Initialized placer bot with id {PLACER_BOT.id}")
+        #PLACER_BOT = PlacerBot(world)
+        #print(f"Initialized placer bot with id {PLACER_BOT.id}")
         
     except:
         e = sys.exc_info()[0]
