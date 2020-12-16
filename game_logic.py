@@ -18,7 +18,7 @@ class Game:
     def __init__(self):
         self.secrets = self._generate_code()
         
-        print("Game: init with code data", self.secrets)
+        print(f"Game: init with code data {self.secrets}")
     
     def _generate_code(self):
         num = random.randrange(self.MAX_BOUND)
@@ -37,6 +37,6 @@ class Game:
         pos_correct = sum(nstr[-i-1] == numstr[-i-1] for i in range(min(len(numstr),4)))
         offpos_correct = sum(min(ncnt[s],numcnt[s]) for s in numcnt if s in ncnt) - pos_correct
         
-        print("Game: processed guess", guess, "with results", pos_correct, offpos_correct)
+        print(f"Game: processed guess {guess} with results {pos_correct}, {offpos_correct}")
         
         return pos_correct, offpos_correct
