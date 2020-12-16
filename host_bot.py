@@ -1,6 +1,6 @@
 import re
 
-from rc_rest_api import post, patch, delete, NOTEURL
+from rc_rest_api import post, patch, delete
 from placer_bot import PlacerBot
 from game_logic import Game
 
@@ -88,6 +88,8 @@ The game is currently in development and therefore very buggy.
             self.game = Game()
             self.turn = -1
 
+            # self._update_note(f"(Psst: I chose {self.game.secrets[-1]})")
+
     # TODO(bud): Add timer to end abandoned games
     #            Allow other users to end completed games
     def _end_game(self, person_name, user_id):
@@ -113,6 +115,9 @@ The game is currently in development and therefore very buggy.
         elif self.current_user_id != user_id:
             self._send_message("Cannot participate in someone else's game", person_name)
         else:
+            if not self.game:
+                self._update_note("Game is already over!")
+
             self.turn += 1
             self._send_message(f"You guessed: {guess_text}", person_name)
 
@@ -132,9 +137,12 @@ The game is currently in development and therefore very buggy.
                 self._lose()
                 return
 
-    # TODO(bud): add more effects here (fireworks emojis?)
     def _win(self):
         self._send_message(f"{self.current_player_name} wins!", self.current_player_name)
+        pbot = PlacerBot(self.start_x, self.start_y+2)
+        self.placers.append(pbot)
+        pbot.fireworks()
+        self.game = None
 
     def _lose(self):
         true_code = self.game.secrets[-1]
@@ -142,6 +150,7 @@ The game is currently in development and therefore very buggy.
         pbot = PlacerBot(self.start_x, self.start_y+2)
         self.placers.append(pbot)
         pbot.write_code(true_code)
+        self.game = None
 
     def _send_message(self, text, person_name=None):
         msg_text = text
