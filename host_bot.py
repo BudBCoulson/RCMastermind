@@ -3,6 +3,7 @@ import re
 from rc_rest_api import post, patch, delete
 from placer_bot import PlacerBot
 from game_logic import Game
+from message_cache import SimpleCache
 
 
 class HostBot:
@@ -12,19 +13,7 @@ class HostBot:
     STARTY_OFFSET = -15
 
     HELP_TEXT = """
-Welcome to the Mastermind corner of virtual RC!
-The Host Bot understands the following messages (case is ignored):
-
-'start game' - Starts the game for the user
-
-'guess <your guess>' - Processes the user's guess (as a string of four colors, represented by the letters "ROGBPY")
-
-'end game' - Ends the game for the user
-
-'<...>help<...>' - Shows this message
-
-WARNING: Under Construction!!
-The game is currently in development and therefore very buggy.
+Welcome! See the note in the top left corner of the Mastermind space for instructions.
 """
 
     def __init__(self, world):
@@ -47,28 +36,33 @@ The game is currently in development and therefore very buggy.
         self.game = None
         self.turn = -1
 
+        self.msg_cache = SimpleCache()
+
     def process_message(self, payload):
-        text = payload["message"]["text"]
-        match = re.fullmatch(r"@\*\*[^|*]+\*\*(.*)", text)
-        if match and len(match.groups()) == 1:
-            msg = match.group(1).lower().strip()
-            print(f"[Host Bot {self.id}]: Got a message: {msg}")
-
-            # TODO(polarfoxgirl): Deal with duplicated messages!
-
-            if msg.find("help") != -1:
-                self._send_message(self.HELP_TEXT, payload['person_name'])
-            elif msg == "start game":
-                self._start_game(payload["person_name"], payload["user_id"])
-            elif msg == "end game":
-                self._end_game(payload['person_name'], payload["user_id"])
-            elif msg.find("guess") != -1:
-                guess = msg[len("guess"):].strip()
-                self._guess(payload['person_name'], payload["user_id"], guess.upper())
-            else:
-                self._send_message("I don't understand you", payload['person_name'])
+        if self.msg_cache.is_seen(payload["message"]):
+            print(f"[Host Bot {self.id}]: Ignoring message since it's a duplicate")
         else:
-            print(f"[Host Bot {self.id}]: Got a message but failed to parse it")
+            text = payload["message"]["text"]
+            match = re.fullmatch(r"@\*\*[^|*]+\*\*(.*)", text)
+            if match and len(match.groups()) == 1:
+                msg = match.group(1).lower().strip()
+                print(f"[Host Bot {self.id}]: Got a message: {msg}")
+
+                # TODO(polarfoxgirl): Deal with duplicated messages!
+
+                if msg.find("help") != -1:
+                    self._send_message(self.HELP_TEXT, payload['person_name'])
+                elif msg == "start game":
+                    self._start_game(payload["person_name"], payload["user_id"])
+                elif msg == "end game":
+                    self._end_game(payload['person_name'], payload["user_id"])
+                elif msg.find("guess") != -1:
+                    guess = msg[len("guess"):].strip()
+                    self._guess(payload['person_name'], payload["user_id"], guess.upper())
+                else:
+                    self._send_message("I don't understand you", payload['person_name'])
+            else:
+                print(f"[Host Bot {self.id}]: Got a message but failed to parse it")
 
     def cleanup(self):
         while self.placers:
