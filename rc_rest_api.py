@@ -4,6 +4,7 @@ from settings import *
 
 BOTURL = "https://recurse.rctogether.com/api/bots/"
 NOTEURL = "https://recurse.rctogether.com/api/notes/"
+WALLURL = "https://recurse.rctogether.com/api/walls/"
 
 # ==== REST API ================================================================
 
