@@ -10,7 +10,7 @@ from time import time
 class HostBot:
     BOTNAME = "Mastermind Host"
     BOTEMOJI = "🧙"
-    STARTX_OFFSET = 5
+    STARTX_OFFSET = 9
     STARTY_OFFSET = -15
 
     HELP_TEXT = """
@@ -118,12 +118,12 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self.turn += 1
             self._send_message(f"You guessed: {guess_text}", person_name)
 
-            pbot = PlacerBot(self.start_x, self.start_y+13-self.turn)
+            pbot = PlacerBot(self.start_x-4, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_code(guess_text)
 
             pos_c, off_c = self.game.process_guess(guess_text)
-            pbot = PlacerBot(self.start_x+3, self.start_y+13-self.turn)
+            pbot = PlacerBot(self.start_x-1, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_keys(pos_c, off_c)
             
@@ -143,7 +143,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
         else:
             self._send_message(f"Sorry, you've run out of guesses. My code was {true_code}", self.current_player_name)
 
-        pbot = PlacerBot(self.start_x, self.start_y+2)
+        pbot = PlacerBot(self.start_x-4, self.start_y+2)
         self.placers.append(pbot)
         pbot.write_code(true_code)
 
