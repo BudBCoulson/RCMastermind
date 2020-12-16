@@ -21,16 +21,17 @@ subscription = Subscription(connection, identifier={'channel': 'ApiChannel'})
 
 # WORLD STATE
 HOST_BOT = None
-world = None
+WORLD = None
 
 
 def on_receive(message):
     try:
+        global WORLD
         # Initialize everything
-        if message["type"] == "world":
-            world = message["payload"]
+        if message["type"] == "world" and not WORLD:
+            WORLD = message["payload"]
             print("world received")
-            init_bots(world)
+            init_bots(WORLD)
         # React when host bot is mentioned
         elif message["type"] == "entity":
             payload = message['payload']
