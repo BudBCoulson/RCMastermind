@@ -1,10 +1,9 @@
-from typing import Any, Optional
-from time import sleep
 import re
 
-from rc_rest_api import *
+from rc_rest_api import post, patch, delete, NOTEURL
 from placer_bot import PlacerBot
 from game_logic import Game
+
 
 class HostBot:
     BOTNAME = "Mastermind Host"
@@ -43,15 +42,14 @@ The game is currently in development and therefore very buggy.
         self.id = int(res.json()["id"])
         self.current_player_name = None
         self.current_user_id = None
-        self.note_id = None
-        
+
         self.placers = []
         self.game = None
         self.turn = -1
 
     def process_message(self, payload):
         text = payload["message"]["text"]
-        match = re.fullmatch("@\*\*[^|*]+\*\*(.*)", text)
+        match = re.fullmatch(r"@\*\*[^|*]+\*\*(.*)", text)
         if match and len(match.groups()) == 1:
             msg = match.group(1).lower().strip()
             print(f"[Host Bot {self.id}]: Got a message: {msg}")
@@ -59,22 +57,20 @@ The game is currently in development and therefore very buggy.
             # TODO(polarfoxgirl): Deal with duplicated messages!
 
             if msg.find("help") != -1:
-                self._update_note(self.HELP_TEXT)
+                self._send_message(self.HELP_TEXT, payload['person_name'])
             elif msg == "start game":
                 self._start_game(payload["person_name"], payload["user_id"])
             elif msg == "end game":
-                self._end_game(payload["user_id"])
+                self._end_game(payload['person_name'], payload["user_id"])
             elif msg.find("guess") != -1:
                 guess = msg[len("guess"):].strip()
-                self._guess(payload["user_id"], guess.upper())
+                self._guess(payload['person_name'], payload["user_id"], guess.upper())
             else:
-                self._update_note(f"{payload['person_name']}, I don't understand you")
+                self._send_message("I don't understand you", payload['person_name'])
         else:
             print(f"[Host Bot {self.id}]: Got a message but failed to parse it")
 
     def cleanup(self):
-        if self.note_id:
-            delete(id=self.note_id, j={"bot_id": self.id}, url=NOTEURL)
         while self.placers:
             pbot = self.placers.pop()
             pbot.clear()
@@ -83,27 +79,27 @@ The game is currently in development and therefore very buggy.
 
     def _start_game(self, person_name, user_id):
         if self.current_user_id:
-            self._update_note("Another game is already in progress!")
+            self._send_message("Another game is already in progress!", person_name)
         else:
             self.current_user_id = user_id
             self.current_player_name = person_name
-            self._update_note(f"Started a game for {person_name}")
-            
+            self._send_message("Started a game for you", person_name)
+
             self.game = Game()
             self.turn = -1
-    
+
     # TODO(bud): Add timer to end abandoned games
     #            Allow other users to end completed games
-    def _end_game(self, user_id):
+    def _end_game(self, person_name, user_id):
         if not self.current_user_id:
-            self._update_note("No game in progress!")
+            self._send_message("No game in progress!", person_name)
         elif self.current_user_id != user_id:
-            self._update_note("Cannot end someone else's game")
+            self._send_message("Cannot end someone else's game", person_name)
         else:
-            self._update_note(f"Ended a game for {self.current_player_name}")
+            self._send_message(f"Ended a game for {self.current_player_name}", person_name)
             self.current_user_id = None
             self.current_player_name = None
-            
+
             while self.placers:
                 pbot = self.placers.pop()
                 pbot.clear()
@@ -111,52 +107,48 @@ The game is currently in development and therefore very buggy.
             self.game = None
             self.turn = -1
 
-    def _guess(self, user_id, guess_text):
+    def _guess(self, person_name, user_id, guess_text):
         if not self.current_user_id:
-            self._update_note("No game in progress!")
+            self._send_message("No game in progress!", person_name)
         elif self.current_user_id != user_id:
-            self._update_note("Cannot participate in someone else's game")
+            self._send_message("Cannot participate in someone else's game", person_name)
         else:
             self.turn += 1
-            self._update_note(f"{self.current_player_name} guessed: {guess_text}")
-            
+            self._send_message(f"You guessed: {guess_text}", person_name)
+
             pbot = PlacerBot(self.start_x, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_code(guess_text)
-            
+
             pos_c, off_c = self.game.process_guess(guess_text)
             pbot = PlacerBot(self.start_x+3, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_keys(pos_c, off_c)
-            
+
             if pos_c == 4:
                 self._win()
                 return
             if self.turn == 9:
                 self._lose()
                 return
-    
-    # TODO(bud): add more effects here (fireworks emojis?)            
+
+    # TODO(bud): add more effects here (fireworks emojis?)
     def _win(self):
-        self._update_note(f"{self.current_player_name} wins!")
-        
+        self._send_message(f"{self.current_player_name} wins!", self.current_player_name)
+
     def _lose(self):
         true_code = self.game.secrets[-1]
-        self._update_note(f"Sorry, {self.current_player_name}, you've run out of guesses. My code was {true_code}")
+        self._send_message(f"Sorry, you've run out of guesses. My code was {true_code}", self.current_player_name)
         pbot = PlacerBot(self.start_x, self.start_y+2)
         self.placers.append(pbot)
         pbot.write_code(true_code)
-            
-    def _update_note(self, text):
-        print("Started updating note")
-        note_req = {
-            "bot_id": self.id,
-            "note": {"note_text": text}
-        }
 
-        if self.note_id:
-            patch(id=self.note_id, j=note_req, url=NOTEURL)
-        else:
-            res = post(id="", j=note_req, url=NOTEURL)
-            self.note_id = res.json()["id"]
-        print(f"[Host Bot {self.id}]: Updated note {self.note_id} with '{text}'")
+    def _send_message(self, text, person_name=None):
+        msg_text = text
+        if person_name:
+            msg_text = f"@**{person_name}** {text}"
+        msg_req = {
+            "bot": {"message": msg_text}
+        }
+        patch(id=self.id, j=msg_req)
+        print(f"[Host Bot {self.id}]: Sent message with '{msg_text}'")
