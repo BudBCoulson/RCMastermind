@@ -1,4 +1,5 @@
 from typing import Any, Optional
+from rc_rest_api import *
 
 class PlacerBot:
     BOTNAME = "Mastermind Placer"
@@ -23,16 +24,15 @@ class PlacerBot:
         }}
         
     def place_wall(self, x, y, clr, txt = None):
-		jsn = {"bot_id": self.id
-		       "wall": {
-               "pos": {
+	jsn = {"wall": {
+                 "pos": {
                  "x": x,
                  "y": y
                },
                "color": clr,
                "wall_text": txt
             }}
-        res = post("",jsn)
+        res = post(self.id,jsn)
         self.pegs.add(res["id"])
 		
 	def erase_wall(self, idx):
