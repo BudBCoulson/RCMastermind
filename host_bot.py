@@ -29,12 +29,12 @@ The game is currently in development and therefore very buggy.
 """
 
     def __init__(self, world):
-        start_x = self.STARTX_OFFSET
-        start_y = world["rows"] + self.STARTY_OFFSET
+        self.start_x = self.STARTX_OFFSET
+        self.start_y = world["rows"] + self.STARTY_OFFSET
         req = {"bot": {
             "name": self.BOTNAME,
-            "x": start_x,
-            "y": start_y,
+            "x": self.start_x,
+            "y": self.start_y,
             "emoji": self.BOTEMOJI,
             "can_be_mentioned": True
         }}
@@ -45,7 +45,7 @@ The game is currently in development and therefore very buggy.
         self.current_user_id = None
         self.note_id = None
         
-        self.placer = None
+        self.placers = []
         self.game = None
         self.turn = -1
 
@@ -75,8 +75,10 @@ The game is currently in development and therefore very buggy.
     def cleanup(self):
         if self.note_id:
             delete(id=self.note_id, j={"bot_id": self.id}, url=NOTEURL)
-        if self.placer:
-            self.placer.vanish()
+        while self.placers:
+            pbot = self.placers.pop()
+            pbot.clear()
+            pbot.vanish()
         delete(id=self.id)
 
     def _start_game(self, person_name, user_id):
@@ -87,7 +89,6 @@ The game is currently in development and therefore very buggy.
             self.current_player_name = person_name
             self._update_note(f"Started a game for {person_name}")
             
-            self.placer = PlacerBot()
             self.game = Game()
             self.turn = -1
     
@@ -103,8 +104,10 @@ The game is currently in development and therefore very buggy.
             self.current_user_id = None
             self.current_player_name = None
             
-            self.placer.clear_board()
-            self.placer.vanish()
+            while self.placers:
+                pbot = self.placers.pop()
+                pbot.clear()
+                pbot.vanish()
             self.game = None
             self.turn = -1
 
@@ -116,9 +119,16 @@ The game is currently in development and therefore very buggy.
         else:
             self.turn += 1
             self._update_note(f"{self.current_player_name} guessed: {guess_text}")
-            self.placer.write_code(guess_text,self.turn)
+            
+            pbot = PlacerBot(self.start_x, self.start_y+13-self.turn)
+            self.placers.append(pbot)
+            pbot.write_code(guess_text)
+            
             pos_c, off_c = self.game.process_guess(guess_text)
-            self.placer.write_keys(pos_c, off_c, self.turn)
+            pbot = PlacerBot(self.start_x+3, self.start_y+13-self.turn)
+            self.placers.append(pbot)
+            pbot.write_keys(pos_c, off_c)
+            
             if pos_c == 4:
                 self._win()
                 return
@@ -133,7 +143,9 @@ The game is currently in development and therefore very buggy.
     def _lose(self):
         true_code = self.game.secrets[-1]
         self._update_note(f"Sorry, {self.current_player_name}, you've run out of guesses. My code was {true_code}")
-        self.placer.write_code(true_code, 11)
+        pbot = PlacerBot(self.start_x, self.start_y+2)
+        self.placers.append(pbot)
+        pbot.write_code(true_code)
             
     def _update_note(self, text):
         print("Started updating note")
