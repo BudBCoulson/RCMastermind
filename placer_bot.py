@@ -8,7 +8,7 @@ class PlacerBot:
     STARTY_OFFSET = -1
 
     def __init__(self, world):
-		start_x = cls.STARTX_OFFSET
+        start_x = cls.STARTX_OFFSET
         start_y = world["rows"] + cls.STARTY_OFFSET
         req = {"bot": {
             "name": self.BOTNAME,
@@ -36,7 +36,7 @@ class PlacerBot:
         self.pegs.add(res["id"])
         
     def erase_wall(self, idx):
-		j = {"bot_id": self.id}
+        j = {"bot_id": self.id}
         if idx in self.pegs:
             delete(idx, j, WALLURL)
             self.pegs.remove(idx)
