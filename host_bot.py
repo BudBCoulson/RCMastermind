@@ -50,6 +50,8 @@ The game is currently in development and therefore very buggy.
             msg = match.group(1).lower().strip()
             print(f"[Host Bot {self.id}]: Got a message: {msg}")
 
+            # TODO(polarfoxgirl): Deal with duplicated messages!
+
             if msg.find("help") != -1:
                 self._update_note(self.HELP_TEXT)
             elif msg == "start game":
