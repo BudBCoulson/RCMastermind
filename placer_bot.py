@@ -7,21 +7,21 @@ class PlacerBot:
     STARTX_OFFSET = 5
     STARTY_OFFSET = -1
 
-    def __init__(self, res_json):
-        self.id = int(res_json["id"])
-        self.pegs = set()
-
-    @classmethod
-    def get_create_req(cls, world):
-        start_x = cls.STARTX_OFFSET
+    def __init__(self, world):
+		start_x = cls.STARTX_OFFSET
         start_y = world["rows"] + cls.STARTY_OFFSET
-        return {"bot": {
-            "name": cls.BOTNAME,
+        req = {"bot": {
+            "name": self.BOTNAME,
             "x": start_x,
             "y": start_y,
-            "emoji": PlacerBot.BOTEMOJI,
+            "emoji": self.BOTEMOJI,
             "can_be_mentioned": False
         }}
+        res = post(id="", j=req)
+        
+        self.id = int(res.json()["id"])
+        self.pegs = set()
+
         
     def place_wall(self, x, y, clr, txt = None):
         jsn = {"wall": {
@@ -32,13 +32,13 @@ class PlacerBot:
             "color": clr,
             "wall_text": txt
         }}
-        res = post(self.id,jsn)
+        res = post("", jsn, WALLURL)
         self.pegs.add(res["id"])
         
     def erase_wall(self, idx):
+		j = {"bot_id": self.id}
         if idx in self.pegs:
-            jsn = {"bot_id": self.id}
-            delete(idx,jsn)
+            delete(idx, j, WALLURL)
             self.pegs.remove(idx)
         
     def clear_board(self):
