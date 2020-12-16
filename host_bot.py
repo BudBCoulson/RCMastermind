@@ -4,6 +4,7 @@ from rc_rest_api import post, patch, delete
 from placer_bot import PlacerBot
 from game_logic import Game
 from message_cache import SimpleCache
+from time import time
 
 
 class HostBot:
@@ -35,6 +36,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
         self.placers = []
         self.game = None
         self.turn = -1
+        self.gametime = None
 
         self.msg_cache = SimpleCache()
 
@@ -47,8 +49,6 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             if match and len(match.groups()) == 1:
                 msg = match.group(1).lower().strip()
                 print(f"[Host Bot {self.id}]: Got a message: {msg}")
-
-                # TODO(polarfoxgirl): Deal with duplicated messages!
 
                 if msg.find("help") != -1:
                     self._send_message(self.HELP_TEXT, payload['person_name'])
@@ -63,6 +63,8 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
                     self._send_message("I don't understand you", payload['person_name'])
             else:
                 print(f"[Host Bot {self.id}]: Got a message but failed to parse it")
+        if self.game and time() - self.gametime > 180:
+            self._end_game(self.current_player_name, self.current_user_id)
 
     def cleanup(self):
         while self.placers:
@@ -81,15 +83,14 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
 
             self.game = Game()
             self.turn = -1
+            self.gametime = time()
 
-            # self._update_note(f"(Psst: I chose {self.game.secrets[-1]})")
+            #self._send_message(f"(Psst: I chose {self.game.secrets[-1]})")
 
-    # TODO(bud): Add timer to end abandoned games
-    #            Allow other users to end completed games
     def _end_game(self, person_name, user_id):
         if not self.current_user_id:
             self._send_message("No game in progress!", person_name)
-        elif self.current_user_id != user_id:
+        elif self.game and self.current_user_id != user_id:
             self._send_message("Cannot end someone else's game", person_name)
         else:
             self._send_message(f"Ended a game for {self.current_player_name}", person_name)
@@ -102,6 +103,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
                 pbot.vanish()
             self.game = None
             self.turn = -1
+            self.gametime = None
 
     def _guess(self, person_name, user_id, guess_text):
         if not self.current_user_id:
@@ -110,7 +112,8 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self._send_message("Cannot participate in someone else's game", person_name)
         else:
             if not self.game:
-                self._update_note("Game is already over!")
+                self._send_message("Game is already over!")
+                return
 
             self.turn += 1
             self._send_message(f"You guessed: {guess_text}", person_name)
@@ -123,28 +126,34 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             pbot = PlacerBot(self.start_x+3, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_keys(pos_c, off_c)
+            
+            self.gametime = time()
 
             if pos_c == 4:
-                self._win()
+                self._gameover(True)
                 return
             if self.turn == 9:
-                self._lose()
+                self._gameover(False)
                 return
 
-    def _win(self):
-        self._send_message(f"{self.current_player_name} wins!", self.current_player_name)
-        pbot = PlacerBot(self.start_x, self.start_y+2)
-        self.placers.append(pbot)
-        pbot.fireworks()
-        self.game = None
-
-    def _lose(self):
+    def _gameover(self, win):
         true_code = self.game.secrets[-1]
-        self._send_message(f"Sorry, you've run out of guesses. My code was {true_code}", self.current_player_name)
+        if win:
+            self._send_message(f"{self.current_player_name} wins!")
+        else:
+            self._send_message(f"Sorry, you've run out of guesses. My code was {true_code}", self.current_player_name)
+
         pbot = PlacerBot(self.start_x, self.start_y+2)
         self.placers.append(pbot)
         pbot.write_code(true_code)
+
+        msg = "Congratulations!" if win else "Better luck next time."
+        for pbot in self.placers:
+            pbot.message(msg)
+
         self.game = None
+        self.turn = -1
+        self.gametime = None
 
     def _send_message(self, text, person_name=None):
         msg_text = text
