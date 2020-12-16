@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from rc_rest_api import *
 
 class PlacerBot:
@@ -8,39 +9,48 @@ class PlacerBot:
     STARTY_OFFSET = -2
 
     def __init__(self, world):
-        start_x = cls.STARTX_OFFSET
-        start_y = world["rows"] + cls.STARTY_OFFSET
+        self.start_x = self.STARTX_OFFSET
+        self.start_y = world["rows"] + self.STARTY_OFFSET
         req = {"bot": {
             "name": self.BOTNAME,
-            "x": start_x,
-            "y": start_y,
+            "x": self.start_x,
+            "y": self.start_y,
             "emoji": self.BOTEMOJI,
+            "direction": "left",
             "can_be_mentioned": False
         }}
         res = post(id="", j=req)
         
         self.id = int(res.json()["id"])
         self.pegs = set()
- 
-    def _place_wall(self, x, y, clr, txt = None):
-        jsn = {"wall": {
-                "pos": {
-                "x": x,
-                "y": y
-            },
-            "color": clr,
-            "wall_text": txt
+  
+    def place_wall(self, x, y, clr):
+        self.move_to(x+1,y)
+        jsn = {"bot_id": self.id,
+               "wall": {
+                 "pos": {
+                   "x": x,
+                   "y": y
+                  },
+               "color": clr
         }}
         res = post("", jsn, WALLURL)
-        self.pegs.add(res["id"])
+        print(res.json())
+        self.pegs.add(res.json()["id"])
         
-    def _erase_wall(self, idx):
+    def erase_wall(self, idx):
         j = {"bot_id": self.id}
         if idx in self.pegs:
             delete(idx, j, WALLURL)
-            self.pegs.remove(idx)
+            
+    def move_to(self, x, y):
+        jsn = {"bot":{"x": x, "y": y}}
+        res = patch(self.id, jsn)
         
-    def _clear_board(self):
+    def clear_board(self):
+        print(self.pegs)
         for idx in self.pegs:
             self.erase_wall(idx)
         self.pegs = set()
+        
+        self.move_to(self.start_x, self.start_y)
