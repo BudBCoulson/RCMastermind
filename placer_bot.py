@@ -5,7 +5,7 @@ class PlacerBot:
     BOTNAME = "Mastermind Placer"
     BOTEMOJI = "🧞"
     STARTX_OFFSET = 5
-    STARTY_OFFSET = -1
+    STARTY_OFFSET = -2
 
     def __init__(self, world):
         start_x = cls.STARTX_OFFSET
@@ -21,9 +21,8 @@ class PlacerBot:
         
         self.id = int(res.json()["id"])
         self.pegs = set()
-
-        
-    def place_wall(self, x, y, clr, txt = None):
+ 
+    def _place_wall(self, x, y, clr, txt = None):
         jsn = {"wall": {
                 "pos": {
                 "x": x,
@@ -35,13 +34,13 @@ class PlacerBot:
         res = post("", jsn, WALLURL)
         self.pegs.add(res["id"])
         
-    def erase_wall(self, idx):
+    def _erase_wall(self, idx):
         j = {"bot_id": self.id}
         if idx in self.pegs:
             delete(idx, j, WALLURL)
             self.pegs.remove(idx)
         
-    def clear_board(self):
+    def _clear_board(self):
         for idx in self.pegs:
             self.erase_wall(idx)
         self.pegs = set()
