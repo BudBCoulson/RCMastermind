@@ -91,6 +91,8 @@ The game is currently in development and therefore very buggy.
             
             self.game = Game()
             self.turn = -1
+            
+            #self._update_note(f"(Psst: I chose {self.game.secrets[-1]})")
     
     # TODO(bud): Add timer to end abandoned games
     #            Allow other users to end completed games
@@ -117,6 +119,9 @@ The game is currently in development and therefore very buggy.
         elif self.current_user_id != user_id:
             self._update_note("Cannot participate in someone else's game")
         else:
+            if not self.game:
+                self._update_note("Game is already over!")
+
             self.turn += 1
             self._update_note(f"{self.current_player_name} guessed: {guess_text}")
             
@@ -135,10 +140,13 @@ The game is currently in development and therefore very buggy.
             if self.turn == 9:
                 self._lose()
                 return
-    
-    # TODO(bud): add more effects here (fireworks emojis?)            
+               
     def _win(self):
         self._update_note(f"{self.current_player_name} wins!")
+        pbot = PlacerBot(self.start_x, self.start_y+2)
+        self.placers.append(pbot)
+        pbot.fireworks()
+        self.game = None
         
     def _lose(self):
         true_code = self.game.secrets[-1]
@@ -146,6 +154,7 @@ The game is currently in development and therefore very buggy.
         pbot = PlacerBot(self.start_x, self.start_y+2)
         self.placers.append(pbot)
         pbot.write_code(true_code)
+        self.game = None
             
     def _update_note(self, text):
         print("Started updating note")
