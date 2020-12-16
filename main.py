@@ -9,7 +9,7 @@ from placer_bot import PlacerBot
 from rc_rest_api import delete
 from settings import app_id, app_secret
 
-# ==== ACTIONCABLE =============================================================
+# ==== ACTIONCABLE ============================================================
 
 connection = Connection(
     url=f"wss://recurse.rctogether.com/cable?app_id={app_id}&app_secret={app_secret}",
@@ -53,6 +53,9 @@ def init_bots(world):
         global HOST_BOT
 
         # Cleanup pre-existing bots
+        if HOST_BOT:
+            HOST_BOT.cleanup()
+
         for entity in world["entities"]:
             if entity["type"] == "Bot":
                 if entity.get("name") in [HostBot.BOTNAME, PlacerBot.BOTNAME]:
