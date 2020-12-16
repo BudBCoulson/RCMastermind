@@ -21,6 +21,7 @@ subscription = Subscription(connection, identifier={'channel': 'ApiChannel'})
 
 # WORLD STATE
 HOST_BOT = None
+PLACER_BOT = None
 world = None
 
 def on_receive(message):
@@ -47,7 +48,7 @@ subscription.create()
 
 def init_bots(world):
     try:
-        global HOST_BOT
+        global HOST_BOT, PLACER_BOT
 
         # Cleanup pre-existing bots
         for entity in world["entities"]:
@@ -61,10 +62,8 @@ def init_bots(world):
         print(f"Initialized host bot with id {HOST_BOT.id}")
         
         # Init Placer Bot
-        jsn = PlacerBot.get_create_req(world)
-        res = post(id="", j=jsn)
-        PLACER_BOT = PlacerBot(res.json())
-        print(f"Initialized host bot with id {PLACER_BOT.id}")
+        PLACER_BOT = PlacerBot(world)
+        print(f"Initialized placer bot with id {PLACER_BOT.id}")
         
     except:
         e = sys.exc_info()[0]
