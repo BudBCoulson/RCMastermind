@@ -24,24 +24,24 @@ class PlacerBot:
         }}
         
     def place_wall(self, x, y, clr, txt = None):
-	jsn = {"wall": {
-                 "pos": {
-                 "x": x,
-                 "y": y
-               },
-               "color": clr,
-               "wall_text": txt
-            }}
+        jsn = {"wall": {
+                "pos": {
+                "x": x,
+                "y": y
+            },
+            "color": clr,
+            "wall_text": txt
+        }}
         res = post(self.id,jsn)
         self.pegs.add(res["id"])
-		
-	def erase_wall(self, idx):
-		if idx in self.pegs:
-			jsn = {"bot_id": self.id}
-			delete(idx,jsn)
-			self.pegs.remove(idx)
-		
-	def clear_board(self):
-		for idx in self.pegs:
-			self.erase_wall(idx)
-		self.pegs = set()
+        
+    def erase_wall(self, idx):
+        if idx in self.pegs:
+            jsn = {"bot_id": self.id}
+            delete(idx,jsn)
+            self.pegs.remove(idx)
+        
+    def clear_board(self):
+        for idx in self.pegs:
+            self.erase_wall(idx)
+        self.pegs = set()
