@@ -1,4 +1,4 @@
-actioncable
+ActionCableZwei
 json
 logging
 requests
