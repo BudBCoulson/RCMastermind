@@ -1,2 +1,2 @@
-ActionCableZwei
+./python-actioncable-zwei
 requests
