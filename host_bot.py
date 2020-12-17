@@ -63,8 +63,6 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
                     self._send_message("I don't understand you", payload['person_name'])
             else:
                 print(f"[Host Bot {self.id}]: Got a message but failed to parse it")
-        if self.game and time() - self.gametime > 180:
-            self._end_game(self.current_player_name, self.current_user_id)
 
     def cleanup(self):
         while self.placers:
@@ -74,9 +72,13 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
         delete(id=self.id)
 
     def _start_game(self, person_name, user_id):
-        if self.current_user_id:
+        if self.game and time() - self.gametime <= 180:
             self._send_message("Another game is already in progress!", person_name)
         else:
+            if self.game:
+                self._send_message("Please wait while I cleanup...", person_name)
+                self._end_game(self.current_player_name, self.current_user_id)
+
             self.current_user_id = user_id
             self.current_player_name = person_name
             self._send_message("Started a game for you", person_name)
@@ -85,7 +87,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self.turn = -1
             self.gametime = time()
 
-            #self._send_message(f"(Psst: I chose {self.game.secrets[-1]})")
+            # self._send_message(f"(Psst: I chose {self.game.secrets[-1]})")
 
     def _end_game(self, person_name, user_id):
         if not self.current_user_id:
@@ -126,7 +128,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             pbot = PlacerBot(self.start_x-1, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_keys(pos_c, off_c)
-            
+
             self.gametime = time()
 
             if pos_c == 4:
