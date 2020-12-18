@@ -97,7 +97,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
     def _end_game(self, person_name, user_id):
         if not self.current_user_id:
             self._send_message("No game in progress", person_name)
-        elif self.game and self.current_user_id != user_id:
+        elif self.game and self.current_user_id not in [user_id, self.id]:
             self._send_message("Cannot end someone else's game", person_name)
         else:
             self._send_message(f"Ended a game for {self.current_player_name}", person_name)
@@ -122,6 +122,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
 
             self.current_user_id = self.id
             self.current_player_name = self.BOTNAME
+
             self._send_message("Started a demo game. I've chosen my code.")
 
             self.game = Game()
@@ -134,7 +135,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             
             while self.game:
                 guess = self.game.get_guess_code()
-                self._guess(guess_text=guess)
+                self._guess(self.BOTNAME, self.id, guess)
 
     def _hint(self, person_name, user_id):
         if not self.current_user_id:
@@ -144,7 +145,8 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
         else:
             self._send_message(f"I would suggest choosing {self.game.get_guess_code()}")
 
-    def _guess(self, person_name=self.current_player_name, user_id=self.current_player_id, guess_text):
+    def _guess(self, person_name, user_id, guess_text):
+        print(person_name, guess_text)       
         if not self.current_user_id:
             self._send_message("No game in progress", person_name)
         elif self.current_user_id != user_id:
@@ -155,13 +157,13 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self._send_message(f"{guess_text} is not a valid guess, {person_name}. Please enter a string of four colors.")
         else:
             self.turn += 1
-            self._send_message(f"You guessed: {guess_text}", person_name)
+            self._send_message(f"Guessed: {guess_text}", person_name)
 
             pbot = PlacerBot(self.start_x-4, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_code(guess_text)
 
-            pos_c, off_c = self.game.process_guess(guess=guess_text)
+            pos_c, off_c = self.game.process_guess(guess_text)
             
             pbot = PlacerBot(self.start_x-1, self.start_y+13-self.turn)
             self.placers.append(pbot)
@@ -177,7 +179,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
                 return
 
     def _gameover(self, win):
-        true_code = self.game.secrets[-1]
+        true_code = self.game.get_true_code()
         if win:
             self._send_message(f"{self.current_player_name} wins!")
         else:
