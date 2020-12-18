@@ -6,7 +6,6 @@ from game_logic import Game
 from message_cache import SimpleCache
 from time import time
 
-
 class HostBot:
     BOTNAME = "Mastermind Host"
     BOTEMOJI = "🧙"
@@ -56,8 +55,12 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
                     self._start_game(payload["person_name"], payload["user_id"])
                 elif msg == "end game":
                     self._end_game(payload['person_name'], payload["user_id"])
-                elif msg.find("guess") != -1:
-                    guess = msg[len("guess"):].strip()
+                elif msg == "demo":
+                    self._demo(payload['person_name'], payload["user_id"])
+                elif msg == "hint":
+                    self._hint(payload['person_name'], payload["user_id"])
+                elif self.game:
+                    guess = msg.strip()
                     self._guess(payload['person_name'], payload["user_id"], guess.upper())
                 else:
                     self._send_message("I don't understand you", payload['person_name'])
@@ -73,7 +76,7 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
 
     def _start_game(self, person_name, user_id):
         if self.game and time() - self.gametime <= 180:
-            self._send_message("Another game is already in progress!", person_name)
+            self._send_message("Another game is already in progress", person_name)
         else:
             if self.game:
                 self._send_message("Please wait while I cleanup...", person_name)
@@ -81,17 +84,19 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
 
             self.current_user_id = user_id
             self.current_player_name = person_name
-            self._send_message("Started a game for you", person_name)
+            self._send_message(f"Started a game for you, {person_name}. I've chosen my code.")
 
             self.game = Game()
             self.turn = -1
             self.gametime = time()
-
-            # self._send_message(f"(Psst: I chose {self.game.secrets[-1]})")
+            
+            pbot = PlacerBot(self.start_x-4, self.start_y+2)
+            self.placers.append(pbot)
+            pbot.write_secret()
 
     def _end_game(self, person_name, user_id):
         if not self.current_user_id:
-            self._send_message("No game in progress!", person_name)
+            self._send_message("No game in progress", person_name)
         elif self.game and self.current_user_id != user_id:
             self._send_message("Cannot end someone else's game", person_name)
         else:
@@ -107,16 +112,48 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self.turn = -1
             self.gametime = None
 
-    def _guess(self, person_name, user_id, guess_text):
+    def _demo(self, person_name, user_id):
+        if self.game and time() - self.gametime <= 180:
+            self._send_message("Another game is already in progress", person_name)
+        else:
+            if self.game:
+                self._send_message("Please wait while I cleanup...", person_name)
+                self._end_game(self.current_player_name, self.current_user_id)
+
+            self.current_user_id = self.id
+            self.current_player_name = self.BOTNAME
+            self._send_message("Started a demo game. I've chosen my code.")
+
+            self.game = Game()
+            self.turn = -1
+            self.gametime = time()
+            
+            pbot = PlacerBot(self.start_x-4, self.start_y+2)
+            self.placers.append(pbot)
+            pbot.write_secret()
+            
+            while self.game:
+                guess = self.game.get_guess_code()
+                self._guess(guess_text=guess)
+
+    def _hint(self, person_name, user_id):
         if not self.current_user_id:
-            self._send_message("No game in progress!", person_name)
+            self._send_message("No game in progress", person_name)
+        elif self.game and self.current_user_id != user_id:
+            self._send_message("Only the current player can request a hint", person_name)
+        else:
+            self._send_message(f"I would suggest choosing {self.game.get_guess_code()}")
+
+    def _guess(self, person_name=self.current_player_name, user_id=self.current_player_id, guess_text):
+        if not self.current_user_id:
+            self._send_message("No game in progress", person_name)
         elif self.current_user_id != user_id:
             self._send_message("Cannot participate in someone else's game", person_name)
+        elif not self.game:
+            self._send_message("Game is already over!")
+        elif len(guess_text) != 4 or not all(ch in {"R","O","G","B","P","Y"} for ch in guess_text):
+            self._send_message(f"{guess_text} is not a valid guess, {person_name}. Please enter a string of four colors.")
         else:
-            if not self.game:
-                self._send_message("Game is already over!")
-                return
-
             self.turn += 1
             self._send_message(f"You guessed: {guess_text}", person_name)
 
@@ -124,7 +161,8 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
             self.placers.append(pbot)
             pbot.write_code(guess_text)
 
-            pos_c, off_c = self.game.process_guess(guess_text)
+            pos_c, off_c = self.game.process_guess(guess=guess_text)
+            
             pbot = PlacerBot(self.start_x-1, self.start_y+13-self.turn)
             self.placers.append(pbot)
             pbot.write_keys(pos_c, off_c)
@@ -145,8 +183,8 @@ Welcome! See the note in the top left corner of the Mastermind space for instruc
         else:
             self._send_message(f"Sorry, you've run out of guesses. My code was {true_code}", self.current_player_name)
 
-        pbot = PlacerBot(self.start_x-4, self.start_y+2)
-        self.placers.append(pbot)
+        pbot = self.placers[0]
+        pbot.clear()
         pbot.write_code(true_code)
 
         msg = "Congratulations!" if win else "Better luck next time."
