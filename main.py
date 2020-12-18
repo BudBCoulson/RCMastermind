@@ -42,7 +42,9 @@ def on_receive(message):
             print("Unknown message type", message["type"])
     except:
         e = sys.exc_info()[0]
-        print("Failed to process received message due to ", e)
+        m = sys.exc_info()[1]
+        tb = sys.exc_info()[2]
+        print(f"Failed to process received message due to {e}: '{m}'\n{tb}")
 
 
 subscription.on_receive(callback=on_receive)
