@@ -65,7 +65,13 @@ class PlacerBot:
             self._place_wall(self.start_x-4+i, self.start_y, clr=self.COLOR_NAMES[colors[i]])
 
         print(f"[Placer Bot {self.id}]: wrote code {colors}")
-    
+
+    def write_secret(self):
+        for i in range(4):
+            self._place_wall(self.start_x-4+i, self.start_y, clr="gray", txt="?")
+
+        print(f"[Placer Bot {self.id}]: wrote secret")
+
     def write_keys(self, pos_c, off_c):
         self._place_wall(self.start_x-2, self.start_y, clr='pink', txt=str(pos_c))
         self._place_wall(self.start_x-1, self.start_y, clr='gray', txt=str(off_c))
